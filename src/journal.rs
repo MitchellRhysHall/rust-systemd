@@ -789,6 +789,53 @@ impl JournalRef {
         Ok(ret)
     }
 
+    /// Prepare enumeration of unique values for a specified field across all matching entries
+    ///
+    /// After calling this, use [`enumerate_unique()`] to iterate through the unique values and
+    /// [`restart_unique()`] to reset the enumeration.
+    ///
+    /// Corresponds to `sd_journal_query_unique()`.
+    pub fn query_unique<A: CStrArgument>(&mut self, field: A) -> Result<()> {
+        let f = field.into_cstr();
+        crate::ffi_result(unsafe { ffi::sd_journal_query_unique(self.as_ptr(), f.as_ref().as_ptr()) })
+            .map(|_| ())
+    }
+
+    /// Restart the iteration of unique values previously set up by [`query_unique()`].
+    ///
+    /// Corresponds to `sd_journal_restart_unique()`.
+    pub fn restart_unique(&mut self) {
+        unsafe { ffi::sd_journal_restart_unique(self.as_ptr()) }
+    }
+
+    /// Obtain the next unique value for the field selected with [`query_unique()`].
+    ///
+    /// The returned [`JournalEntryField`] wraps the raw "FIELD=value" bytes. Use
+    /// [`JournalEntryField::value()`] to access only the value portion.
+    ///
+    /// Safety/lifetime notes are identical to those of [`enumerate_data()`]: the returned slice is
+    /// only valid until the next call to one of the enumeration/get functions on this `JournalRef`.
+    ///
+    /// Corresponds to `sd_journal_enumerate_unique()`.
+    pub fn enumerate_unique(&mut self) -> Result<Option<JournalEntryField<'_>>> {
+        let mut data = MaybeUninit::<*const c_void>::uninit();
+        let mut data_len = MaybeUninit::uninit();
+        let r = crate::ffi_result(unsafe {
+            ffi::sd_journal_enumerate_unique(self.as_ptr(), data.as_mut_ptr(), data_len.as_mut_ptr())
+        });
+
+        let v = r?;
+
+        if v == 0 {
+            return Ok(None);
+        }
+
+        // SAFETY: see notes above; cast void pointer to u8 for slice construction.
+        let ptr = unsafe { data.assume_init() } as *const u8;
+        let b = unsafe { std::slice::from_raw_parts(ptr, data_len.assume_init()) };
+        Ok(Some(b.into()))
+    }
+
     /// Iterate over journal entries.
     ///
     /// Corresponds to `sd_journal_next()`
