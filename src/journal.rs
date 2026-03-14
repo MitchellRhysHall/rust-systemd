@@ -675,6 +675,16 @@ impl JournalRef {
         ffi_result(unsafe { ffi::sd_journal_get_fd(self.as_ptr()) })
     }
 
+    /// Returns the total disk space used by journal files currently accessible
+    /// through this `Journal` handle, in bytes.
+    ///
+    /// Corresponds to `sd_journal_get_usage()`.
+    pub fn usage(&self) -> Result<u64> {
+        let mut bytes: u64 = 0;
+        ffi_result(unsafe { ffi::sd_journal_get_usage(self.as_ptr(), &mut bytes) })?;
+        Ok(bytes)
+    }
+
     /// Fields that are longer that this number of bytes _may_ be truncated when retrieved by this [`Journal`]
     /// instance.
     ///
