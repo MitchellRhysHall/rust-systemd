@@ -70,6 +70,15 @@ fn ts() {
 }
 
 #[test]
+fn test_has_files() {
+    let j = journal::OpenOptions::default().open().unwrap();
+    // We can't really assert what these return as it depends on the system,
+    // but we can at least call them to ensure they don't crash.
+    let _ = j.has_persistent_files().unwrap();
+    let _ = j.has_runtime_files().unwrap();
+}
+
+#[test]
 fn test_timestamp() {
     if !have_journal() {
         return;

@@ -693,6 +693,14 @@ impl JournalRef {
         Ok(r > 0)
     }
 
+    /// Returns a positive value if the journal is stored on a runtime file system.
+    ///
+    /// Corresponds to `sd_journal_has_runtime_files()`.
+    pub fn has_runtime_files(&self) -> Result<bool> {
+        let r = ffi_result(unsafe { ffi::sd_journal_has_runtime_files(self.as_ptr()) })?;
+        Ok(r > 0)
+    }
+
     /// Fields that are longer that this number of bytes _may_ be truncated when retrieved by this [`Journal`]
     /// instance.
     ///
