@@ -685,6 +685,14 @@ impl JournalRef {
         Ok(bytes)
     }
 
+    /// Returns a positive value if the journal is stored on a persistent file system.
+    ///
+    /// Corresponds to `sd_journal_has_persistent_files()`.
+    pub fn has_persistent_files(&self) -> Result<bool> {
+        let r = ffi_result(unsafe { ffi::sd_journal_has_persistent_files(self.as_ptr()) })?;
+        Ok(r > 0)
+    }
+
     /// Fields that are longer that this number of bytes _may_ be truncated when retrieved by this [`Journal`]
     /// instance.
     ///

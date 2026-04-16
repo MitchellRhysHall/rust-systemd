@@ -221,3 +221,15 @@ fn cutoff_realtime() {
     assert_eq!(m_from, mc_from);
     assert_eq!(m_to, mc_to);
 }
+
+#[test]
+fn has_persistent_files() {
+    if !have_journal() {
+        return;
+    }
+
+    let j = journal::OpenOptions::default().open().unwrap();
+    // We don't necessarily know if the system has persistent files,
+    // but we can at least call the function and check it doesn't error.
+    let _ = j.has_persistent_files().unwrap();
+}
