@@ -1087,6 +1087,47 @@ impl JournalRef {
         Ok(monotonic_timestamp_us)
     }
 
+    /// Returns the realtime cutoff timestamps of the journal.
+    /// (i.e. the timestamps of the first and last entries)
+    pub fn cutoff_realtime_usec(&self) -> Result<(u64, u64)> {
+        let mut from: u64 = 0;
+        let mut to: u64 = 0;
+        ffi_result(unsafe {
+            ffi::sd_journal_get_cutoff_realtime_usec(self.as_ptr(), &mut from, &mut to)
+        })?;
+        Ok((from, to))
+    }
+
+    /// Returns the realtime cutoff timestamps of the journal as SystemTime.
+    pub fn cutoff_realtime(&self) -> Result<(time::SystemTime, time::SystemTime)> {
+        let (from, to) = self.cutoff_realtime_usec()?;
+        Ok((
+            system_time_from_realtime_usec(from),
+            system_time_from_realtime_usec(to),
+        ))
+    }
+
+    /// Returns the monotonic cutoff timestamps of the journal for the given boot ID.
+    pub fn cutoff_monotonic_usec(&self, boot_id: Id128) -> Result<(u64, u64)> {
+        let mut from: u64 = 0;
+        let mut to: u64 = 0;
+        ffi_result(unsafe {
+            ffi::sd_journal_get_cutoff_monotonic_usec(
+                self.as_ptr(),
+                boot_id.inner,
+                &mut from,
+                &mut to,
+            )
+        })?;
+        Ok((from, to))
+    }
+
+    /// Returns the monotonic cutoff timestamps of the journal for the current boot.
+    pub fn cutoff_monotonic_usec_current_boot(&self) -> Result<(u64, u64)> {
+        let boot_id = Id128::from_boot()?;
+        self.cutoff_monotonic_usec(boot_id)
+    }
+
     /// Adds a match by which to filter the entries of the journal.
     /// If a match is applied, only entries with this field set will be iterated.
     pub fn match_add<T: Into<Vec<u8>>>(&mut self, key: &str, val: T) -> Result<&mut JournalRef> {

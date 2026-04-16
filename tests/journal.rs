@@ -199,3 +199,25 @@ fn journal_entry_data_1() {
     assert_eq!(jrd.name(), &b"HI"[..]);
     assert_eq!(jrd.value(), Some(&b"foo"[..]));
 }
+
+#[test]
+fn cutoff_realtime() {
+    if !have_journal() {
+        return;
+    }
+
+    let j = journal::OpenOptions::default().open().unwrap();
+    let (from_usec, to_usec) = j.cutoff_realtime_usec().unwrap();
+    let (from_st, to_st) = j.cutoff_realtime().unwrap();
+
+    assert!(from_usec <= to_usec);
+    assert!(from_st <= to_st);
+
+    let boot_id = id128::Id128::from_boot().unwrap();
+    let (m_from, m_to) = j.cutoff_monotonic_usec(boot_id).unwrap();
+    assert!(m_from <= m_to);
+
+    let (mc_from, mc_to) = j.cutoff_monotonic_usec_current_boot().unwrap();
+    assert_eq!(m_from, mc_from);
+    assert_eq!(m_to, mc_to);
+}
